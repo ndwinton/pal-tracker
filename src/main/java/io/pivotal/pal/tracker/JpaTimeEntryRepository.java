@@ -3,6 +3,7 @@ package io.pivotal.pal.tracker;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -20,8 +21,8 @@ public class JpaTimeEntryRepository implements TimeEntryRepository {
 
     @Override
     public TimeEntry find(long id) {
-        TimeEntryRecord record = recordRepository.findOne(id);
-        return record == null ? null : record.toTimeEntry();
+        Optional<TimeEntryRecord> result = recordRepository.findById(id);
+        return result.isPresent() ? result.get().toTimeEntry() : null;
     }
 
     @Override
@@ -41,6 +42,6 @@ public class JpaTimeEntryRepository implements TimeEntryRepository {
 
     @Override
     public void delete(long id) {
-        recordRepository.delete(id);
+        recordRepository.deleteById(id);
     }
 }
