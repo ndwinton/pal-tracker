@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,8 +20,9 @@ import javax.sql.DataSource;
 @SpringBootApplication
 public class PalTrackerApplication {
     @Autowired DataSource dataSource;
-    @Autowired
-    Logger logger;
+    @Autowired Logger logger;
+    @Autowired TimeEntryRecordRepository timeEntryRecordRepository;
+    @Value("${repositoryType:memory}") String repositoryType;
 
     public static void main(String[] args) {
         SpringApplication.run(PalTrackerApplication.class, args);
@@ -32,24 +34,21 @@ public class PalTrackerApplication {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "repositoryType", havingValue = "jdbc")
-    TimeEntryRepository jdbcTimeEntryRepository() {
-        logger.info("Using JDBC repository");
-        return new JdbcTimeEntryRepository(dataSource);
-    }
+    TimeEntryRepository timeEntryRepository() {
+        switch (repositoryType) {
+            case "jdbc":
+                logger.info("Using JDBX repository");
+                return new JdbcTimeEntryRepository(dataSource);
 
-    @Bean
-    @ConditionalOnProperty(name = "repositoryType", havingValue = "jpa")
-    TimeEntryRepository jpaTimeEntryRepository(@Autowired TimeEntryRecordRepository recordRepository) {
-        logger.info("Using JPA repository");
-        return new JpaTimeEntryRepository(recordRepository);
-    }
+            case "jpa":
+                logger.info("Using JPA repository");
+                return new JpaTimeEntryRepository(timeEntryRecordRepository);
 
-    @Bean
-    @ConditionalOnProperty(name = "repositoryType", havingValue = "memory", matchIfMissing = true)
-    TimeEntryRepository inMemoryTimeEntryRepository() {
-        logger.info("Using in-memory repository");
-        return new InMemoryTimeEntryRepository();
+            case "memory":
+            default:
+                logger.info("Using in-memory repository");
+                return new InMemoryTimeEntryRepository();
+        }
     }
 
     @Bean
